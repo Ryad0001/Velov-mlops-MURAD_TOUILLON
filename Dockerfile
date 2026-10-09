@@ -2,11 +2,8 @@ FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY . .
 RUN pip install -r requirements.txt
-
-COPY pyproject.toml .
-COPY src ./src
 RUN pip install --no-deps .
 
 # Génère les données simulées (seed fixe) et entraîne le modèle -> /app/models
