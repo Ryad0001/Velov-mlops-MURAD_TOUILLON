@@ -1,0 +1,31 @@
+services:
+  db:
+    build: ./docker/postgres
+    image: velov-db:dev
+    environment:
+      POSTGRES_DB: velov
+      POSTGRES_USER: velov
+      POSTGRES_PASSWORD: velov
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U velov -d velov"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    image: velov-api:dev
+    environment:
+      DATABASE_URL: postgresql://velov:velov@db:5432/velov
+    ports:
+      - "8069:8069"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

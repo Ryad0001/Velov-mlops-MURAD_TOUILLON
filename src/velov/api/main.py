@@ -24,6 +24,7 @@ from pathlib import Path
 import joblib
 from fastapi import FastAPI, HTTPException
 import pandas as pd
+from velov.api import db
 from velov.api.schemas import PredictionRequest, PredictionResponse  # noqa: F401
 from velov.features import FEATURES, add_features  # noqa: F401
 from velov.train import METADATA_FILENAME, sha256_of
@@ -55,6 +56,10 @@ async def lifespan(app: FastAPI):
         logger.info("Modèle %s chargé", STATE["metadata"]["model_version"])
     except Exception:
         logger.exception("Échec du chargement du modèle depuis %s", model_dir)
+    try:
+        db.check_connection()
+    except Exception:
+        logger.exception("Base de données injoignable au démarrage")
     yield
     STATE.update(model=None, metadata=None)
 
@@ -91,9 +96,11 @@ async def predict(request: PredictionRequest):
     df = df[FEATURES]
     raw = float(STATE["model"].predict(df)[0])
     predicted = min(max(raw, 0.0), float(request.capacity))
-    return PredictionResponse(
+    response = PredictionResponse(
         station_id=request.station_id,
         target_timestamp=request.timestamp + timedelta(hours=1),
         predicted_bikes=predicted,
         model_version=STATE["metadata"]["model_version"],
     )
+    db.save_prediction(request, response)
+    return response
