@@ -5,7 +5,9 @@ TP1, partie 2 : complétez les schémas. Mode : SANS IA pour cette partie.
 
 from __future__ import annotations
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
+from datetime import UTC
+
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class PredictionRequest(BaseModel):
@@ -27,9 +29,20 @@ class PredictionRequest(BaseModel):
     station_id: int = Field(...,ge=1, description="Identifiant de la station")
     timestamp: AwareDatetime = Field(..., description="Instant de la mesure")
     capacity: int = Field(..., ge=1, le=100, description="Capacité de la station")
-    bikes_available: int = Field(..., ge=0, le=capacity, description="Nombre de vélos disponibles")
+    bikes_available: int = Field(..., ge=0, description="Nombre de vélos disponibles")
     temperature: float = Field(..., ge=-30, le=50, description="Température")
     is_raining: bool = Field(..., description="Précipitations")
+
+    @field_validator("timestamp")
+    @classmethod
+    def to_utc(cls, value):
+        return value.astimezone(UTC)
+
+    @model_validator(mode="after")
+    def check_bikes_le_capacity(self):
+        if self.bikes_available > self.capacity:
+            raise ValueError("bikes_available ne peut pas dépasser capacity")
+        return self
 
 
 class PredictionResponse(BaseModel):
@@ -37,6 +50,3 @@ class PredictionResponse(BaseModel):
     target_timestamp: AwareDatetime = Field(..., description="Instant prédit (t + 1 h)")
     predicted_bikes: float = Field(..., ge=0)
     model_version: str
-
-
-# STRETCH : BatchPredictionRequest (1 à 1000 PredictionRequest) et BatchPredictionResponse
