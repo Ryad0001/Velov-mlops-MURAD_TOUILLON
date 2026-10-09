@@ -1,0 +1,16 @@
+.git
+.venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+data
+models
+mlruns
+mlflow.db
+.env
+tests
+docs
+exercices
+README.md
+requirements-dev.txt
