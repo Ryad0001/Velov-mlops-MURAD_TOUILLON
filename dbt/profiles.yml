@@ -1,0 +1,10 @@
+# Profil du projet : dbt lit ce fichier en priorité quand il est lancé depuis ce dossier.
+velov:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('VELOV_WAREHOUSE', '../data/warehouse.duckdb') }}"
+      threads: 1
+      settings:
+        TimeZone: UTC  # les instants sont manipulés en UTC (convention du projet)

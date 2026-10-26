@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: bronze
+    schema: bronze
+    description: Données brutes chargées par `python -m velov.ingest` (payload JSON tel que reçu).
+    tables:
+      - name: velov_status
+        description: Une ligne par station et par mesure (`last_update`), open data Grand Lyon.
+      - name: weather_hourly
+        description: Météo de Lyon, une ligne par heure UTC (Open-Meteo).

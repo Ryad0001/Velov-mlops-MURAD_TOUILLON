@@ -1,0 +1,14 @@
+version: 2
+
+models:
+  - name: stations
+    description: Référentiel des stations Vélo'v (dernier état connu de chaque station).
+  - name: station_status
+    description: Historique des mesures de disponibilité, typé. Les anomalies sont conservées.
+    columns:
+      - name: capacity
+        description: Nombre total de bornes (`total_stands.capacity`).
+      - name: bikes_available
+        description: Vélos disponibles, tous types confondus.
+  - name: weather_hourly
+    description: Météo horaire de Lyon, typée.

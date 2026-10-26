@@ -1,0 +1,52 @@
+version: 2
+
+models:
+  - name: availability_hourly
+    description: >
+      Historique horaire par station au schéma du contrat de données, mêmes colonnes que le
+      simulateur (velov.data). Contrat enforced : dbt refuse de construire la table si les
+      colonnes, leur ordre ou leurs types divergent, et DuckDB rejette toute ligne hors bornes.
+    config:
+      contract:
+        enforced: true
+    constraints:
+      - type: primary_key
+        columns: [station_id, timestamp]
+      - type: check
+        expression: "bikes_available <= capacity"
+    columns:
+      - name: station_id
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: check
+            expression: "station_id >= 1"
+      - name: timestamp
+        data_type: timestamp with time zone
+        description: Heure UTC de la mesure.
+        quote: true
+        constraints:
+          - type: not_null
+      - name: capacity
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: check
+            expression: "capacity between 1 and 100"
+      - name: bikes_available
+        data_type: integer
+        constraints:
+          - type: not_null
+          - type: check
+            expression: "bikes_available >= 0"
+      - name: temperature
+        data_type: double
+        description: Température à Lyon en °C.
+        constraints:
+          - type: not_null
+          - type: check
+            expression: "temperature between -30 and 50"
+      - name: is_raining
+        data_type: boolean
+        constraints:
+          - type: not_null

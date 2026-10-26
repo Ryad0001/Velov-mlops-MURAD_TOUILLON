@@ -55,14 +55,23 @@ Architecture médaillon dans un entrepôt DuckDB local (`data/warehouse.duckdb`,
 | Couche | Contenu | Produit par |
 |---|---|---|
 | bronze | payloads bruts de l'open data Vélo'v (Grand Lyon) et de la météo (Open-Meteo) | `python -m velov.ingest` |
+| silver | `stations`, `station_status`, `weather_hourly` : typées, une ligne par clé | dbt |
+| gold | `availability_hourly` : une ligne par station et par heure UTC, au schéma du contrat | dbt |
 
 ```bash
 python -m velov.ingest               # à relancer autant que voulu : aucun doublon
+cd dbt && dbt build                  # silver puis gold (profil DuckDB dans dbt/profiles.yml)
 ```
 
 L'ingestion est **idempotente** : chaque table bronze a une clé naturelle (station + `last_update`,
 heure UTC pour la météo) et les clés déjà présentes sont ignorées. Deux passages de suite :
 le second affiche `+0 lignes` tant que les stations n'ont pas publié de nouvelle mesure.
+
+La table gold a exactement les colonnes du contrat (`velov.features.RAW_COLUMNS`, celles du simulateur) :
+`station_id, timestamp, capacity, bikes_available, temperature, is_raining`. Son contrat dbt est
+**enforced** (`dbt/models/gold/_gold.yml`) : une colonne manquante, renommée ou d'un autre type fait
+échouer le build, et les bornes du contrat d'entrée de l'API (capacité 1-100, vélos entre 0 et la
+capacité, température entre -30 et 50 °C) sont des contraintes de la table.
 
 ## Exigences du projet
 
@@ -82,6 +91,7 @@ src/velov/
   api/schemas.py   contrat d'entrée / sortie (Pydantic)
 tests/             pytest (features, API)
 docs/              templates : model card, runbook, ADR
+dbt/               modèles silver et gold (S3)
 exercices/         démo pickle (S1)
 ```
 
