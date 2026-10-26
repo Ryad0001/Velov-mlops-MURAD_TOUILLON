@@ -3,12 +3,59 @@ version: 2
 models:
   - name: stations
     description: Référentiel des stations Vélo'v (dernier état connu de chaque station).
+    columns:
+      - name: station_id
+        data_tests:
+          - not_null
+          - unique
+      - name: capacity
+        data_tests:
+          - not_null
+
   - name: station_status
     description: Historique des mesures de disponibilité, typé. Les anomalies sont conservées.
     columns:
+      - name: station_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stations')
+                field: station_id
+      - name: observed_at
+        data_tests:
+          - not_null
       - name: capacity
         description: Nombre total de bornes (`total_stands.capacity`).
+        data_tests:
+          - not_null
       - name: bikes_available
         description: Vélos disponibles, tous types confondus.
+        data_tests:
+          - not_null
+          # Seuil à deux niveaux : un dépassement isolé de la capacité (station en débordement,
+          # mesure prise pendant une mise à jour) est signalé ; au-delà de 1 % des mesures,
+          # c'est la source qui a changé et le build s'arrête avant de reconstruire le gold.
+          - within_capacity:
+              name: bikes_within_capacity_warn
+              arguments:
+                capacity_column: capacity
+                max_share: 0
+              config:
+                severity: warn
+          - within_capacity:
+              name: bikes_within_capacity_error
+              arguments:
+                capacity_column: capacity
+                max_share: 0.01
+
   - name: weather_hourly
     description: Météo horaire de Lyon, typée.
+    columns:
+      - name: observed_at
+        data_tests:
+          - not_null
+          - unique
+      - name: temperature
+        data_tests:
+          - not_null

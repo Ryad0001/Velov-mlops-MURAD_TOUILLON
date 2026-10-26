@@ -60,7 +60,7 @@ Architecture médaillon dans un entrepôt DuckDB local (`data/warehouse.duckdb`,
 
 ```bash
 python -m velov.ingest               # à relancer autant que voulu : aucun doublon
-cd dbt && dbt build                  # silver puis gold (profil DuckDB dans dbt/profiles.yml)
+cd dbt && dbt build                  # silver, tests, puis gold et ses tests (profil DuckDB dans dbt/profiles.yml)
 ```
 
 L'ingestion est **idempotente** : chaque table bronze a une clé naturelle (station + `last_update`,
@@ -72,6 +72,14 @@ La table gold a exactement les colonnes du contrat (`velov.features.RAW_COLUMNS`
 **enforced** (`dbt/models/gold/_gold.yml`) : une colonne manquante, renommée ou d'un autre type fait
 échouer le build, et les bornes du contrat d'entrée de l'API (capacité 1-100, vélos entre 0 et la
 capacité, température entre -30 et 50 °C) sont des contraintes de la table.
+
+Tests dbt (`dbt build` les joue après chaque modèle, et ne construit pas le gold si un test silver échoue) :
+
+- `not_null` sur les clés et les mesures, `unique` sur les clés des référentiels ;
+- `relationships` : toute station de `station_status` et du gold existe dans `stations` ;
+- capacité avec seuil (`within_capacity`, `dbt/tests/generic/`) sur `station_status` : un vélo au-dessus
+  de la capacité donne un **WARN** ; plus de **1 %** des mesures au-dessus de la capacité donne une **ERROR**
+  et le gold n'est pas reconstruit. Sur le gold, aucune tolérance.
 
 ## Exigences du projet
 

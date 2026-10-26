@@ -21,24 +21,39 @@ models:
           - type: not_null
           - type: check
             expression: "station_id >= 1"
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stations')
+                field: station_id
       - name: timestamp
         data_type: timestamp with time zone
         description: Heure UTC de la mesure.
         quote: true
         constraints:
           - type: not_null
+        data_tests:
+          - not_null
       - name: capacity
         data_type: integer
         constraints:
           - type: not_null
           - type: check
             expression: "capacity between 1 and 100"
+        data_tests:
+          - not_null
       - name: bikes_available
         data_type: integer
         constraints:
           - type: not_null
           - type: check
             expression: "bikes_available >= 0"
+        data_tests:
+          - not_null
+          - within_capacity:
+              arguments:
+                capacity_column: capacity
       - name: temperature
         data_type: double
         description: Température à Lyon en °C.
