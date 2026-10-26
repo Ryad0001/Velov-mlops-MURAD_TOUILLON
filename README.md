@@ -48,6 +48,22 @@ curl -X POST http://127.0.0.1:8000/v1/predict \
 Le `timestamp` doit porter un fuseau (`+02:00`, `Z`...) : sans fuseau, l'API répond 422.
 Les instants sont renvoyés et journalisés en UTC (`"target_timestamp": "2026-10-06T07:00:00Z"`).
 
+## Pipeline de données (S3)
+
+Architecture médaillon dans un entrepôt DuckDB local (`data/warehouse.duckdb`, hors git) :
+
+| Couche | Contenu | Produit par |
+|---|---|---|
+| bronze | payloads bruts de l'open data Vélo'v (Grand Lyon) et de la météo (Open-Meteo) | `python -m velov.ingest` |
+
+```bash
+python -m velov.ingest               # à relancer autant que voulu : aucun doublon
+```
+
+L'ingestion est **idempotente** : chaque table bronze a une clé naturelle (station + `last_update`,
+heure UTC pour la météo) et les clés déjà présentes sont ignorées. Deux passages de suite :
+le second affiche `+0 lignes` tant que les stations n'ont pas publié de nouvelle mesure.
+
 ## Exigences du projet
 
 Le service doit respecter les exigences de [docs/exigences.md](docs/exigences.md), de S1 à S9.
@@ -59,6 +75,7 @@ Chaque rendu indique celles qu'il couvre et comment le vérifier.
 ```
 src/velov/
   data.py          simulateur de données (remplacé par l'open data en S3, même schéma)
+  ingest.py        ingestion bronze idempotente (open data Vélo'v + météo) dans DuckDB
   features.py      features partagées entraînement / API (anti training-serving skew)
   train.py         entraînement, baseline, artefact + metadata.json, option MLflow
   api/main.py      FastAPI : /health, /ready, /v1/model, /v1/predict, /v1/predict/batch
